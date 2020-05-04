@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using RestSharp;
 using System;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -61,7 +62,10 @@ namespace ScaleService
                 var request = new RestRequest("getWt");
                 request.AddJsonBody(new { wt_ip = scaleIP, in_out_type = inOrOut});
                 var response = await restClient.ExecuteAsync<GetWtResponse>(request);
-                return response.Data;
+                if (response.StatusCode == HttpStatusCode.OK)
+                    return response.Data;
+                else
+                    throw new Exception("Service通讯失败");
             }
             catch(Exception e)
             {

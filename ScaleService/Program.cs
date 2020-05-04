@@ -18,6 +18,7 @@ namespace ScaleService
             Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
+                    services.AddSingleton<RelayWatcher>();
                     services.AddSingleton<ScaleRestClient>();
                     services.AddHostedService<Worker>();
                 });

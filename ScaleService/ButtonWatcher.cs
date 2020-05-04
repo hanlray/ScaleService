@@ -10,6 +10,8 @@ namespace ScaleService
         {
             public string Name { get; set; }
             public ScaleOperator Operator { get; internal set; }
+            public bool IsBusy { get; private set; } = false;
+            public bool Enabled { get; set; } = true;
 
             public event EventHandler Busy;
             public event EventHandler NeedAdjust;
@@ -34,6 +36,15 @@ namespace ScaleService
             {
                 try
                 {
+                    if (!Enabled) return;
+
+                    Logger.Debug("{0}按钮触发", Name);
+                    if (IsBusy) return;
+                    IsBusy = true;
+
+                    //Progress?.Invoke(this, new ProgressEventArgs("开始工作"));
+                    Logger.Debug("开始工作");
+
                     Busy?.Invoke(this, new EventArgs());
 
                     if (!scaleOperator.IsGratingsOff())
@@ -48,9 +59,6 @@ namespace ScaleService
                         NeedAdjust?.Invoke(this, new EventArgs());
                         return;
                     }
-
-                    //Progress?.Invoke(this, new ProgressEventArgs("开始工作"));
-                    Logger.Debug("开始工作");
 
                     //call remote service to get weight and plate number
                     //Progress?.Invoke(this, new ProgressEventArgs("正在请求重量"));
@@ -110,6 +118,7 @@ namespace ScaleService
                     //Progress?.Invoke(this, new ProgressEventArgs("发生错误：" + ex.Message));
                     Logger.Warn("{0}上的本次操作失败:{1}", scaleOperator.Name, ex.ToString());
                 }
+                IsBusy = false;
             }
         }
     }

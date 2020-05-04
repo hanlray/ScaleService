@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ScaleService
 {
@@ -26,7 +27,6 @@ namespace ScaleService
         internal Switch FrontGSwitch { get; private set; }
         internal Switch BackGSwitch { get; private set; }
         internal Switch ButtonSwitch { get; private set; }
-        public object LEDConfig { get; private set; }
 
         public delegate void ProgressEventHandler(object sender, ProgressEventArgs e);
         public delegate void IdleEventHandler(object sender, IdleEventArgs e);
@@ -37,8 +37,6 @@ namespace ScaleService
         public event EventHandler Busy;
         public event EventHandler Idle;
 
-        private bool isEnable = false;
-
         private System.Timers.Timer _idleTimer = new System.Timers.Timer()
         {
             AutoReset = false
@@ -46,7 +44,11 @@ namespace ScaleService
 
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
-        ScaleOperator(Switch frontGSwitch, Switch backGSwitch, Switch buttonSwitch)
+        ScaleOperator()
+        {
+        }
+
+        internal void SetupSwitches(Switch frontGSwitch, Switch backGSwitch, Switch buttonSwitch)
         {
             FrontGSwitch = frontGSwitch;
             BackGSwitch = backGSwitch;
@@ -56,6 +58,7 @@ namespace ScaleService
             FrontGSwitch.On += _frontGWatcher.ProcessAsync;
             _frontGWatcher.Busy += OnBusy;
             _frontGWatcher.FakeCar += (s, e) => _idleTimer.Start();
+            _frontGWatcher.Error += (s, e) => _idleTimer.Start();
 
             this._buttonWatcher = new ButtonWatcher(this);
             ButtonSwitch.On += _buttonWatcher.ProcessAsync;
@@ -63,7 +66,7 @@ namespace ScaleService
             _buttonWatcher.Completed += (s, e) => _idleTimer.Start();
 
             //this.ButtonIdle += this.OnIdle;
-            _idleTimer.Interval = LEDOptions.StayTime;
+            _idleTimer.Interval = Timeout;
             _idleTimer.Elapsed += (s, e) => Ready();
         }
 
@@ -72,9 +75,9 @@ namespace ScaleService
             this.Name = name;
         }
 
-        private void Ready()
+        private async void Ready()
         {
-            SwitchRelay(true);//turn green
+            await SwitchRelayAsync(true);//turn green
             Display(LEDOptions.WelcomeMessage.Template, LEDOptions.WelcomeMessage.ShowConfig);
 
             Idle?.Invoke(this, new EventArgs());
@@ -83,8 +86,6 @@ namespace ScaleService
         public void Start()
         {
             Ready();
-
-            isEnable = true;
         }
 
         private bool IsGratingsOff()
@@ -128,7 +129,7 @@ namespace ScaleService
                 LEDOptions.IP,
                 1, //udp
                 64, 32,
-                LEDOptions.MaterialUID, //内码文字ID
+                LEDOptions.MaterialUid, //内码文字ID
                 0,//单基色
                 showConfig.ShowStyle, //立即显示
                 showConfig.ShowSpeed, //显示速度
@@ -140,75 +141,95 @@ namespace ScaleService
                 false //掉电不保存
             );
             bool ret = Convert.ToInt32(b) == 0 ? true : false;
-            Logger.Debug("LED call returns {0}", ret);
+            Logger.Debug("LED {0} 发送失败", LEDOptions.IP);
             return ret;
         }
 
-        private bool SwitchRelay(bool isSucceed)
+        private async Task<bool> SwitchRelayAsync(bool isSucceed)
         {
             //Progress?.Invoke(this, new ProgressEventArgs("正在开关继电器"));
             for (int i = 0; i < 3; i++)
             {
-                if (SwitchRelayOnce(isSucceed)) return true;
+                if (await SwitchRelayOnceAsync(isSucceed)) return true;
             }
             //Progress?.Invoke(this, new ProgressEventArgs("开关继电器失败"));
             Logger.Warn("开关继电器失败");
             return false;
         }
 
-        private bool SwitchRelayOnce(bool isSucceed)
+        private async Task<bool> SwitchRelayOnceAsync(bool isSucceed)
         {
             bool ret = true;
             foreach (var outGroup in DownRelayOptions.OutGroups)
             {
-                bool succOutRet = SwitchRelayOUT(outGroup.SuccessOut, isSucceed ? true : false);
+                bool succOutRet = await SwitchRelayOUTAsync(outGroup.SuccessOut, isSucceed ? true : false);
                 Logger.Trace("{0} OUT returns {1}", outGroup.SuccessOut, succOutRet);
-                bool failOutRet = SwitchRelayOUT(outGroup.FailureOut, isSucceed ? false : true);
+                bool failOutRet = await SwitchRelayOUTAsync(outGroup.FailureOut, isSucceed ? false : true);
                 Logger.Trace("{0} OUT returns {1}", outGroup.FailureOut, failOutRet);
                 if (!succOutRet || !failOutRet) ret = false;
             }
             return ret;
         }
 
-        private bool SwitchRelayOUT(int OUT, bool isOn)
+        private async Task<bool> SwitchRelayOUTAsync(int OUT, bool isOn)
         {
             bool ret = false;
             try
             {
-                TcpClient tcpClient = new TcpClient();
-                tcpClient.Connect(IPAddress.Parse(DownRelayOptions.IP), DownRelayOptions.Port);
-                NetworkStream ntwStream = tcpClient.GetStream();
-                if (ntwStream.CanWrite)
+                using var tcpClient = new TcpClient();
+                await tcpClient.ConnectAsync(DownRelayOptions.IP, DownRelayOptions.Port);
+                using var stream = tcpClient.GetStream();
+
+                string command = string.Format("AT+STACH{0}={1}\n", OUT, isOn ? 1 : 0);
+                byte[] bytSend = Encoding.ASCII.GetBytes(command);
+                await stream.WriteAsync(bytSend, 0, bytSend.Length);
+
+                byte[] buf = new byte[256];
+                int i = 0;
+                string message;
+                while (stream.CanRead)
                 {
-                    String command = String.Format("AT+STACH{0}={1}\n", OUT, isOn ? 1 : 0);
-                    byte[] bytSend = Encoding.ASCII.GetBytes(command);
-                    ntwStream.Write(bytSend, 0, bytSend.Length);
+                    int n = await stream.ReadAsync(buf, i, 1);
+                    if (n != 1) throw new Exception("网络读取失败");
 
-                    var memStream = new MemoryStream();
-
-                    for (int i = 0; i < 256; i++)
+                    char c = (char)buf[i];
+                    if (c != '\n')
                     {
-                        byte b = (byte)ntwStream.ReadByte();
-                        memStream.WriteByte(b);
-                        if (b == '\n') break;
+                        i++;
+                        if (i >= 256) throw new Exception("没有读到一行");
+                        continue;
                     }
 
-                    String result = Encoding.ASCII.GetString(memStream.ToArray());
-                    Logger.Trace("Relay:Got the response " + result);
-                    if (result == "OK\n") ret = true;
+                    message = Encoding.ASCII.GetString(buf, 0, i);
+                    Logger.Trace("Relay:Got the response " + message);
+                    if (message == "OK")
+                    {
+                        ret = true;
+                    }
+                    break;
                 }
-                else
-                {
-                    throw new Exception("不能向继电器发送数据");
-                }
-                ntwStream.Close();
-                tcpClient.Close();
             }
             catch (Exception e)
             {
                 Logger.Warn("控制继电器失败:" + e.Message);
             }
             return ret;
+        }
+
+        internal void Enable(bool isEnable)
+        {
+            if (isEnable)
+            {
+                _frontGWatcher.Enabled = true;
+                _buttonWatcher.Enabled = true;
+            }
+            else
+            {
+                _frontGWatcher.Enabled = false;
+                _buttonWatcher.Enabled = false;
+
+                _idleTimer.Stop();
+            }
         }
 
         #region IDisposable Support
@@ -247,14 +268,6 @@ namespace ScaleService
             // GC.SuppressFinalize(this);
         }
 
-        internal void Enable(bool isEnable)
-        {
-            this.isEnable = isEnable;
-            if (!isEnable)
-            {
-                _idleTimer.Stop();
-            }
-        }
         #endregion
     };
 }

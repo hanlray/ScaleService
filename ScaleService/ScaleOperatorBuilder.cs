@@ -14,6 +14,7 @@ namespace ScaleService
         public int InOrOut { get; private set; }
         public DownRelayOptions DownRelayOptions { get; private set; }
         public ScaleRestClient RestClient { get; private set; }
+        public int Timeout { get; private set; }
 
         public class Builder
         {
@@ -46,15 +47,17 @@ namespace ScaleService
                 var buttonInPort = Convert.ToInt32(uniOptions["Button"]);
                 var buttonSwitch = new Switch(buttonInPort, RelayWatcher);
 
-                var op = new ScaleOperator(frontGSwitch, backGSwitch, buttonSwitch)
+                var op = new ScaleOperator()
                 {
                     Name = name,
+                    Timeout = Convert.ToInt32(uniOptions["Timeout"]),
                     LEDOptions = uniOptions.GetSection("LED").Get<LEDConfig>(),
                     ScaleIP = uniOptions["ScaleIP"],
                     InOrOut = Convert.ToInt32(uniOptions["InOrOut"]),
                     DownRelayOptions = uniOptions.GetSection("DownRelay").Get<DownRelayOptions>(),
                     RestClient = RestClient
                 };
+                op.SetupSwitches(frontGSwitch, backGSwitch, buttonSwitch);
 
                 return op;
             }
@@ -71,18 +74,6 @@ namespace ScaleService
                 }
                 throw new Exception("配置出错");
             }
-        }
-
-        private void SetButtonWatcher(ButtonWatcher buttonWatcher)
-        {
-            this._buttonWatcher = buttonWatcher;
-            _buttonWatcher.Operator = this;
-        }
-
-        private void SetFrontGWatcher(FGratingWatcher frontGWatcher)
-        {
-            this._frontGWatcher = frontGWatcher;
-            _frontGWatcher.Operator = this;
         }
     }
 }

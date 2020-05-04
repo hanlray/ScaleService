@@ -20,7 +20,7 @@ namespace ScaleService
     public class LEDConfig
     {
         public string IP { get; set; }
-        public int MaterialUID { get; set; }
+        public int MaterialUid { get; set; }
         public int StayTime { get; set; }
         public LEDMessageConfig CPZLMessage { get; set; }
         public LEDMessageConfig WelcomeMessage { get; set; }
@@ -34,6 +34,6 @@ namespace ScaleService
     {
         public string IP { get; set; }
         public int Port { get; set; }
-        public IList<OutGroup> OutGroups;
+        public List<OutGroup> OutGroups { get; set; }
     }
 }

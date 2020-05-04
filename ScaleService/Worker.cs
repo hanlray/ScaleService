@@ -37,7 +37,7 @@ namespace ScaleService
             BuildUniOperators();
             BuildBiOperators();
 
-            await Task.Run(() => _relayWatcher.StartAsync());
+            await Task.Run(() => _relayWatcher.StartAsync(stoppingToken));
         }
 
         private void BuildBiOperators()

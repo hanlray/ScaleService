@@ -11,10 +11,15 @@ namespace ScaleService
         {
             public event EventHandler Busy;
             public event EventHandler FakeCar;
+            public event EventHandler Error;
 
             public ScaleOperator Operator { get; internal set; }
 
             private ScaleOperator scaleOperator;
+
+            public string Name { get; internal set; }
+            public bool Enabled { get; set; } = true;
+            public bool IsBusy { get; private set; } = false;
 
             public FGratingWatcher(string name)
             {
@@ -26,17 +31,19 @@ namespace ScaleService
                 this.scaleOperator = scaleOperator;
             }
 
-            public string Name { get; internal set; }
-
             internal async void ProcessAsync(object sender, EventArgs e)
             {
                 try
                 {
+                    if (!Enabled) return;
+
                     Logger.Debug("{0}光栅触发", Name);
 
+                    if (IsBusy) return;
+                    IsBusy = true;
                     Busy?.Invoke(this, new EventArgs());
 
-                    scaleOperator.SwitchRelay(false);//turn red
+                    await scaleOperator.SwitchRelayAsync(false);//turn red
 
                     double weight = 0;
                     GetWtResponse resp = null;
@@ -94,8 +101,10 @@ namespace ScaleService
                 }
                 catch (Exception ex)
                 {
+                    Error?.Invoke(this, new EventArgs());
                     Logger.Debug("处理前光栅事件发生异常：{0}", ex.Message);
                 }
+                IsBusy = false;
             }
         }
     }

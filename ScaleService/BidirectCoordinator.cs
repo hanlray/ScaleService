@@ -32,8 +32,16 @@ namespace ScaleService
 
                 var co  = new BidirectCoordinator();
 
-                co.EntranceOP = new ScaleOperator.Builder(biOptions.GetSection("Entrance")).BuildBi(_gratingSwitches);
-                co.ExitOP = new ScaleOperator.Builder(biOptions.GetSection("Exit")).BuildBi(_gratingSwitches);
+                co.EntranceOP = new ScaleOperator.Builder(biOptions.GetSection("Entrance"))
+                {
+                    RelayWatcher = RelayWatcher,
+                    RestClient = RestClient
+                }.BuildBi(_gratingSwitches);
+                co.ExitOP = new ScaleOperator.Builder(biOptions.GetSection("Exit"))
+                {
+                    RelayWatcher = RelayWatcher,
+                    RestClient = RestClient
+                }.BuildBi(_gratingSwitches);
 
                 co.EntranceOP.Busy += (s, e) =>
                 {
