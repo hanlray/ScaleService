@@ -59,7 +59,7 @@ namespace ScaleService
         {
             try
             {
-                var request = new RestRequest("getWt");
+                var request = new RestRequest("getWt", Method.POST);
                 request.AddJsonBody(new { wt_ip = scaleIP, in_out_type = inOrOut});
                 var response = await restClient.ExecuteAsync<GetWtResponse>(request);
                 if (response.StatusCode == HttpStatusCode.OK)
@@ -78,7 +78,7 @@ namespace ScaleService
         {
             try
             {
-                var request = new RestRequest("gatePass");
+                var request = new RestRequest("gatePass", Method.POST);
                 request.AddJsonBody(new { wt_ip = scaleIP, in_out_type = inOrOut, tk_no = tk_no, wt_num = wt_num });
                 var response = await restClient.ExecuteAsync<GatePassResponse>(request);
                 return response.Data;
