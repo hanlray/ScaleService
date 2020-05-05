@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -16,7 +17,7 @@ namespace ScaleService
 
         private ScaleRestClient _restClient;
         private RelayWatcher _relayWatcher;
-
+        private IServiceProvider _serviceProvider;
         private IList<ScaleOperator> _uniOperators = new List<ScaleOperator>();
         private IList<BidirectCoordinator> _biCOs = new List<BidirectCoordinator>();
 
@@ -24,12 +25,14 @@ namespace ScaleService
             ILogger<Worker> logger, 
             IConfiguration configRoot,
             ScaleRestClient restClient,
-            RelayWatcher relayWatcher)
+            RelayWatcher relayWatcher,
+            IServiceProvider serviceProvider)
         {
             _logger = logger;
             Configuration = (IConfigurationRoot)configRoot;
             _restClient = restClient;
             _relayWatcher = relayWatcher;
+            _serviceProvider = serviceProvider;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -44,12 +47,8 @@ namespace ScaleService
         {
             foreach (var biOptions in Configuration.GetSection("Bidirectionals").GetChildren())
             {
-                var co = new BidirectCoordinator.Builder(biOptions)
-                {
-                    RelayWatcher = _relayWatcher,
-                    RestClient = _restClient
-                }
-                .Build();
+                var builder = _serviceProvider.GetRequiredService<BidirectCoordinator.Builder>();
+                var co = builder.Build(biOptions);
                 co.Start();
                 _biCOs.Add(co);
             }
@@ -59,12 +58,10 @@ namespace ScaleService
         {
             foreach (var uniOptions in Configuration.GetSection("Unidirectionals").GetChildren())
             {
-                ScaleOperator op = new ScaleOperator.Builder(uniOptions)
-                {
-                    RelayWatcher = _relayWatcher,
-                    RestClient = _restClient
-                }
-                .BuildUni();
+                var builder = _serviceProvider.GetRequiredService<ScaleOperator.Builder>();
+                builder.Options = uniOptions;
+                var op = builder.BuildUni();
+
                 op.Start();
                 _uniOperators.Add(op);
             }

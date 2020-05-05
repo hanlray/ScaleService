@@ -18,6 +18,10 @@ namespace ScaleService
             Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
+                    services.AddTransient<ScaleOperator>();
+                    services.AddTransient<ScaleOperator.Builder>();
+                    services.AddTransient<BidirectCoordinator>();
+                    services.AddTransient<BidirectCoordinator.Builder>();
                     services.AddSingleton<RelayWatcher>();
                     services.AddSingleton<ScaleRestClient>();
                     services.AddHostedService<Worker>();

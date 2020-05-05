@@ -11,56 +11,56 @@ namespace ScaleService
 
         public class Builder
         {
-            private IConfigurationSection biOptions;
             private readonly Dictionary<int, Switch> _gratingSwitches = new Dictionary<int, Switch>();
+            private BidirectCoordinator _co;
+            private RelayWatcher _relayWatcher;
+            private ScaleOperator.Builder _entranceBuilder;
+            private ScaleOperator.Builder _exitBuilder;
 
-            public Builder(IConfigurationSection biOptions)
+            public Builder(
+                BidirectCoordinator co,
+                RelayWatcher relayWatcher,
+                ScaleOperator.Builder entranceBuilder,
+                ScaleOperator.Builder exitBuilder)
             {
-                this.biOptions = biOptions;
+                this._co = co;
+                _relayWatcher = relayWatcher;
+                this._entranceBuilder = entranceBuilder;
+                this._exitBuilder = exitBuilder;
             }
 
-            public RelayWatcher RelayWatcher { get; internal set; }
-            public ScaleRestClient RestClient { get; internal set; }
-
-            public BidirectCoordinator Build()
+            public BidirectCoordinator Build(IConfigurationSection biOptions)
             {
                 var gratings = biOptions.GetSection("Gratings").Get<int[]>();
                 foreach (var grating in gratings)
                 {
-                    _gratingSwitches.Add(grating, new Switch(grating, RelayWatcher));
+                    _gratingSwitches.Add(grating, new Switch(grating, _relayWatcher));
                 }
 
-                var co  = new BidirectCoordinator();
+                _entranceBuilder.Options = biOptions.GetSection("Entrance");
+                _co.EntranceOP = _entranceBuilder.BuildBi(_gratingSwitches);
 
-                co.EntranceOP = new ScaleOperator.Builder(biOptions.GetSection("Entrance"))
-                {
-                    RelayWatcher = RelayWatcher,
-                    RestClient = RestClient
-                }.BuildBi(_gratingSwitches);
-                co.ExitOP = new ScaleOperator.Builder(biOptions.GetSection("Exit"))
-                {
-                    RelayWatcher = RelayWatcher,
-                    RestClient = RestClient
-                }.BuildBi(_gratingSwitches);
+                _exitBuilder.Options = biOptions.GetSection("Exit");
+                _co.ExitOP = _exitBuilder.BuildBi(_gratingSwitches);
 
-                co.EntranceOP.Busy += (s, e) =>
+                _co.EntranceOP.Busy += (s, e) =>
                 {
-                    co.ExitOP.Enable(false);
+                    _co.ExitOP.Enable(false);
                 };
-                co.EntranceOP.Idle += (s, e) =>
+                _co.EntranceOP.Idle += (s, e) =>
                 {
-                    co.ExitOP.Enable(true);
+                    _co.ExitOP.Enable(true);
                 };
-                co.ExitOP.Busy += (s, e) =>
+                _co.ExitOP.Busy += (s, e) =>
                 {
-                    co.EntranceOP.Enable(false);
+                    _co.EntranceOP.Enable(false);
                 };
-                co.ExitOP.Idle += (s, e) =>
+                _co.ExitOP.Idle += (s, e) =>
                 {
-                    co.EntranceOP.Enable(true);
+                    _co.EntranceOP.Enable(true);
                 };
 
-                return co;
+                return _co;
             }
         }
 

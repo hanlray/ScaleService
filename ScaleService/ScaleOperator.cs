@@ -28,6 +28,16 @@ namespace ScaleService
         internal Switch BackGSwitch { get; private set; }
         internal Switch ButtonSwitch { get; private set; }
 
+        private ButtonWatcher _buttonWatcher;
+        private FGratingWatcher _frontGWatcher;
+
+        public LEDConfig LEDOptions { get; set; }
+        public string ScaleIP { get; private set; }
+        public int InOrOut { get; private set; }
+        public DownRelayOptions DownRelayOptions { get; private set; }
+        public ScaleRestClient RestClient { get; private set; }
+        public int Timeout { get; set; }
+
         public delegate void ProgressEventHandler(object sender, ProgressEventArgs e);
         public delegate void IdleEventHandler(object sender, IdleEventArgs e);
 
@@ -44,8 +54,9 @@ namespace ScaleService
 
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
-        ScaleOperator()
+        public ScaleOperator(ScaleRestClient restClient)
         {
+            this.RestClient = restClient;
         }
 
         internal void SetupSwitches(Switch frontGSwitch, Switch backGSwitch, Switch buttonSwitch)
@@ -68,11 +79,6 @@ namespace ScaleService
             //this.ButtonIdle += this.OnIdle;
             _idleTimer.Interval = Timeout;
             _idleTimer.Elapsed += (s, e) => Ready();
-        }
-
-        public ScaleOperator(string name)
-        {
-            this.Name = name;
         }
 
         private async void Ready()

@@ -6,68 +6,58 @@ namespace ScaleService
 {
     public partial class ScaleOperator
     {
-        private ButtonWatcher _buttonWatcher;
-        private FGratingWatcher _frontGWatcher;
-
-        public LEDConfig LEDOptions { get; private set; }
-        public string ScaleIP { get; private set; }
-        public int InOrOut { get; private set; }
-        public DownRelayOptions DownRelayOptions { get; private set; }
-        public ScaleRestClient RestClient { get; private set; }
-        public int Timeout { get; private set; }
-
         public class Builder
         {
-            private IConfigurationSection uniOptions;
+            private ScaleOperator _scaleOperator;
+            private RelayWatcher _relayWatcher;
 
-            public Builder(IConfigurationSection uniOptions)
+            public IConfigurationSection Options { get; set; }
+
+            public Builder(
+                ScaleOperator scaleOperator,
+                RelayWatcher relayWatcher)
             {
-                this.uniOptions = uniOptions;
+                this._scaleOperator = scaleOperator;
+                this._relayWatcher = relayWatcher;
             }
-
-            public RelayWatcher RelayWatcher { get; internal set; }
-            public ScaleRestClient RestClient { get; internal set; }
 
             public ScaleOperator BuildUni()
             {
-                var gratings = uniOptions.GetSection("Gratings");
+                var gratings = Options.GetSection("Gratings");
                 var frontInPort = Convert.ToInt32(gratings["Front"]);
-                var frontGSwitch = new Switch(frontInPort, RelayWatcher);
+                var frontGSwitch = new Switch(frontInPort, _relayWatcher);
 
                 var backInPort = Convert.ToInt32(gratings["Back"]);
-                var backGSwitch = new Switch(backInPort, RelayWatcher);
+                var backGSwitch = new Switch(backInPort, _relayWatcher);
 
                 return Build(frontGSwitch, backGSwitch);
             }
 
             private ScaleOperator Build(Switch frontGSwitch, Switch backGSwitch)
             {
-                var name = uniOptions["Name"];
+                var name = Options["Name"];
 
-                var buttonInPort = Convert.ToInt32(uniOptions["Button"]);
-                var buttonSwitch = new Switch(buttonInPort, RelayWatcher);
+                var buttonInPort = Convert.ToInt32(Options["Button"]);
+                var buttonSwitch = new Switch(buttonInPort, _relayWatcher);
 
-                var op = new ScaleOperator()
-                {
-                    Name = name,
-                    Timeout = Convert.ToInt32(uniOptions["Timeout"]),
-                    LEDOptions = uniOptions.GetSection("LED").Get<LEDConfig>(),
-                    ScaleIP = uniOptions["ScaleIP"],
-                    InOrOut = Convert.ToInt32(uniOptions["InOrOut"]),
-                    DownRelayOptions = uniOptions.GetSection("DownRelay").Get<DownRelayOptions>(),
-                    RestClient = RestClient
-                };
-                op.SetupSwitches(frontGSwitch, backGSwitch, buttonSwitch);
+                _scaleOperator.Name = name;
+                _scaleOperator.Timeout = Convert.ToInt32(Options["Timeout"]);
+                _scaleOperator.LEDOptions = Options.GetSection("LED").Get<LEDConfig>();
+                _scaleOperator.ScaleIP = Options["ScaleIP"];
+                _scaleOperator.InOrOut = Convert.ToInt32(Options["InOrOut"]);
+                _scaleOperator.DownRelayOptions = Options.GetSection("DownRelay").Get<DownRelayOptions>();
 
-                return op;
+                _scaleOperator.SetupSwitches(frontGSwitch, backGSwitch, buttonSwitch);
+
+                return _scaleOperator;
             }
 
             internal ScaleOperator BuildBi(Dictionary<int, Switch> gratingSwitches)
             {
-                var gratings = uniOptions.GetSection("Gratings");
+                var gratings = Options.GetSection("Gratings");
                 var frontInPort = Convert.ToInt32(gratings["Front"]);
                 var backInPort = Convert.ToInt32(gratings["Back"]);
-                if(gratingSwitches.ContainsKey(frontInPort) &&
+                if (gratingSwitches.ContainsKey(frontInPort) &&
                     gratingSwitches.ContainsKey(backInPort))
                 {
                     return Build(gratingSwitches[frontInPort], gratingSwitches[backInPort]);
