@@ -17,14 +17,9 @@ namespace ScaleService
 
             private ScaleOperator scaleOperator;
 
-            public string Name { get; internal set; }
+            //public string Name { get; internal set; }
             public bool Enabled { get; set; } = true;
             public bool IsBusy { get; private set; } = false;
-
-            public FGratingWatcher(string name)
-            {
-                this.Name = name;
-            }
 
             public FGratingWatcher(ScaleOperator scaleOperator)
             {
@@ -37,7 +32,7 @@ namespace ScaleService
                 {
                     if (!Enabled) return;
 
-                    Logger.Debug("{0}光栅触发", Name);
+                    Logger.Debug("{0}光栅触发", scaleOperator.Name);
 
                     if (IsBusy) return;
                     IsBusy = true;
@@ -49,9 +44,9 @@ namespace ScaleService
                     GetWtResponse resp = null;
                     for (int i = 1; i <= 5; i++)
                     {
-                        Logger.Debug("[{0}]请求重量", Name);
+                        Logger.Debug("[{0}]请求重量", scaleOperator.Name);
                         resp = await scaleOperator.RestClient.GetWtAsync(scaleOperator.ScaleIP, scaleOperator.InOrOut.ToString());
-                        Logger.Debug("[{0}]返回重量{1}", Name, resp.wt_num);
+                        Logger.Debug("[{0}]返回重量{1}", scaleOperator.Name, resp.wt_num);
                         /*GetWtResponse resp = new GetWtResponse()
                         {
                             status = "1",
@@ -77,9 +72,9 @@ namespace ScaleService
                     if (weight < 1000)
                     {
                         Logger.Debug("称重小于1000, 开始抬杆");
-                        Logger.Debug("[{0}]请求抬杆", Name);
+                        Logger.Debug("[{0}]请求抬杆", scaleOperator.Name);
                         GatePassResponse gpResp = await scaleOperator.RestClient.GatePassAsync(scaleOperator.ScaleIP, scaleOperator.InOrOut.ToString(), resp.tk_no, resp.wt_num);
-                        Logger.Debug("[{0}]返回抬杆", Name);
+                        Logger.Debug("[{0}]返回抬杆", scaleOperator.Name);
                         /*GatePassResponse gpResp = new GatePassResponse()
                         {
                             status = 1

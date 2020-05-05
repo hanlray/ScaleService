@@ -8,7 +8,7 @@ namespace ScaleService
     {
         class ButtonWatcher
         {
-            public string Name { get; set; }
+            //public string Name { get; set; }
             public ScaleOperator Operator { get; internal set; }
             public bool IsBusy { get; private set; } = false;
             public bool Enabled { get; set; } = true;
@@ -38,7 +38,7 @@ namespace ScaleService
                 {
                     if (!Enabled) return;
 
-                    Logger.Debug("{0}按钮触发", Name);
+                    Logger.Debug("{0}按钮触发", scaleOperator.Name);
                     if (IsBusy) return;
                     IsBusy = true;
 
@@ -62,9 +62,9 @@ namespace ScaleService
 
                     //call remote service to get weight and plate number
                     //Progress?.Invoke(this, new ProgressEventArgs("正在请求重量"));
-                    Logger.Debug("[{0}]请求重量", Name);
+                    Logger.Debug("[{0}]请求重量", scaleOperator.Name);
                     GetWtResponse resp = await scaleOperator.RestClient.GetWtAsync(scaleOperator.ScaleIP, scaleOperator.InOrOut.ToString());
-                    Logger.Debug("[{0}]返回重量{1}", Name, resp.wt_num);
+                    Logger.Debug("[{0}]返回重量{1}", scaleOperator.Name, resp.wt_num);
                     /*GetWtResponse resp = new GetWtResponse()
                     {
                         status = 1,
@@ -88,9 +88,9 @@ namespace ScaleService
                     }
 
                     //Progress?.Invoke(this, new ProgressEventArgs("正在抬杆"));
-                    Logger.Debug("[{0}]请求抬杆", Name);
+                    Logger.Debug("[{0}]请求抬杆", scaleOperator.Name);
                     GatePassResponse gpResp = await scaleOperator.RestClient.GatePassAsync(scaleOperator.ScaleIP, scaleOperator.InOrOut.ToString(), resp.tk_no, resp.wt_num);
-                    Logger.Debug("[{0}]返回抬杆", Name);
+                    Logger.Debug("[{0}]返回抬杆", scaleOperator.Name);
                     /*GatePassResponse gpResp = new GatePassResponse()
                     {
                         status = 1
