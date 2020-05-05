@@ -99,7 +99,10 @@ namespace ScaleService
                     Error?.Invoke(this, new EventArgs());
                     Logger.Debug("处理前光栅事件发生异常：{0}", ex.Message);
                 }
-                IsBusy = false;
+                finally
+                {
+                    IsBusy = false;
+                }
             }
         }
     }

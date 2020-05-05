@@ -15,7 +15,7 @@ namespace ScaleService
 
             public event EventHandler Busy;
             public event EventHandler NeedAdjust;
-            public event EventHandler Completed;
+            public event EventHandler Succeed;
             private ScaleOperator scaleOperator;
             private int inPort;
             private RelayWatcher relayWatcher;
@@ -84,7 +84,7 @@ namespace ScaleService
                     {
                         //Progress?.Invoke(this, new ProgressEventArgs("输出到显示屏失败"));
                         Logger.Warn("LED显示失败");
-                        return;
+                        //return;
                     }
 
                     //Progress?.Invoke(this, new ProgressEventArgs("正在抬杆"));
@@ -100,25 +100,23 @@ namespace ScaleService
                         //Progress?.Invoke(this, new ProgressEventArgs("抬杆失败"));
                         Logger.Warn("抬杆失败：" + gpResp.reason);
                         //SwitchRelay(false);//no need to call this, it's already red
+                        return;
                     }
-                    else if (gpResp.status == "1")
-                    {
-                        Logger.Info("抬杆成功：");
-                        //Progress?.Invoke(this, new ProgressEventArgs("抬杆成功"));
-                        //SwitchRelay(true);
-                    }
-                    else
-                    {
-                        throw new Exception("Service返回错误数据");
-                    }
-                    Completed?.Invoke(this, new EventArgs());
+
+                    Logger.Info("抬杆成功：");
+                    //Progress?.Invoke(this, new ProgressEventArgs("抬杆成功"));
+
+                    Succeed?.Invoke(this, new EventArgs());
                 }
                 catch (Exception ex)
                 {
                     //Progress?.Invoke(this, new ProgressEventArgs("发生错误：" + ex.Message));
                     Logger.Warn("{0}上的本次操作失败:{1}", scaleOperator.Name, ex.ToString());
                 }
-                IsBusy = false;
+                finally
+                {
+                    IsBusy = false;
+                }
             }
         }
     }

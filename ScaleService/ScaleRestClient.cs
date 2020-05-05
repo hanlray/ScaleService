@@ -65,7 +65,7 @@ namespace ScaleService
                 if (response.StatusCode == HttpStatusCode.OK)
                     return response.Data;
                 else
-                    throw new Exception("Service通讯失败");
+                    throw new Exception("Service失败");
             }
             catch(Exception e)
             {
@@ -81,7 +81,10 @@ namespace ScaleService
                 var request = new RestRequest("gatePass", Method.POST);
                 request.AddJsonBody(new { wt_ip = scaleIP, in_out_type = inOrOut, tk_no = tk_no, wt_num = wt_num });
                 var response = await restClient.ExecuteAsync<GatePassResponse>(request);
-                return response.Data;
+                if (response.StatusCode == HttpStatusCode.OK)
+                    return response.Data;
+                else
+                    throw new Exception("Service失败");
             }
             catch (Exception e)
             {

@@ -74,7 +74,7 @@ namespace ScaleService
             this._buttonWatcher = new ButtonWatcher(this);
             ButtonSwitch.On += _buttonWatcher.ProcessAsync;
             _buttonWatcher.Busy += OnBusy;
-            _buttonWatcher.Completed += (s, e) => _idleTimer.Start();
+            _buttonWatcher.Succeed += (s, e) => _idleTimer.Start();
 
             //this.ButtonIdle += this.OnIdle;
             _idleTimer.Interval = Timeout;
@@ -96,12 +96,6 @@ namespace ScaleService
 
         private bool IsGratingsOff()
         {
-            /*
-            foreach(var gratingDetector in GratingDetectors)
-            {
-                if (gratingDetector.IsOn) return false;
-            }
-            return true;*/
             return !FrontGSwitch.IsOn && !BackGSwitch.IsOn;
         }
 
