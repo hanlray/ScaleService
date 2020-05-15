@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 
 namespace ScaleService
 {
@@ -27,10 +28,12 @@ namespace ScaleService
             if (e.Value == 1)
             {
                 //Logger.Debug("In {0} is on", _inPort);
+                IsOn = true;
                 On?.Invoke(this, new EventArgs());
             }
             else
             {
+                IsOn = false;
                 //Logger.Debug("In {0} is off", _inPort);
                 Off?.Invoke(this, new EventArgs());
             }

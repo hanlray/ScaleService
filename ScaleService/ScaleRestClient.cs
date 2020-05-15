@@ -53,6 +53,7 @@ namespace ScaleService
         public ScaleRestClient(ILogger<Worker> logger, IConfiguration configRoot)
         {
             this.restClient = new RestClient(configRoot["ServiceUri"]);
+            //restClient.Encoding = Encoding.UTF8;
         }
 
         public async Task<GetWtResponse> GetWtAsync(string scaleIP, string inOrOut)

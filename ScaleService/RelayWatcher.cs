@@ -10,6 +10,33 @@ using System.Threading.Tasks;
 
 namespace ScaleService
 {
+    public static class MyExtensions
+    {
+        public static async Task<int> ReadAsync(this NetworkStream stream, byte[] buffer, int offset, int count, int TimeOut)
+        {
+            var ReciveCount = 0;
+            var receiveTask = Task.Run(async () => { ReciveCount = await stream.ReadAsync(buffer, offset, count); });
+            var isReceived = await Task.WhenAny(receiveTask, Task.Delay(TimeOut)) == receiveTask;
+            if (!isReceived) return -1;
+            return ReciveCount;
+        }
+
+        public static async Task TimeoutAfter(this Task task, TimeSpan timeout)
+        {
+            using var timeoutCancellationTokenSource = new CancellationTokenSource();
+            var completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutCancellationTokenSource.Token));
+            if (completedTask == task)
+            {
+                timeoutCancellationTokenSource.Cancel();
+                await task;  // Very important in order to propagate exceptions
+            }
+            else
+            {
+                throw new TimeoutException("The operation has timed out.");
+            }
+        }
+    }
+
     public class RelayWatcher
     {
         //private TcpClient _tcpClient;
@@ -53,24 +80,40 @@ namespace ScaleService
                 try
                 {
                     using var stream = tcpClient.GetStream();
-                    byte[] buf = new byte[256];
+                    byte[] lineBuf = new byte[256];
                     int i = 0;
                     while (stream.CanRead)
                     {
                         _logger.LogTrace("正在读取");
-                        int n = await stream.ReadAsync(buf, i, 1, stoppingToken);
-                        if (n != 1) throw new Exception("网络读取失败");
-
-                        _logger.LogTrace("读到一个字节");
-                        char c = (char)buf[i];
-                        if (c != '\n')
+                        //int n = await stream.ReadAsync(buf, i, 1, stoppingToken);
+                        int n = await stream.ReadAsync(lineBuf, i, 1, 2000);
+                        if (n == -1)//timeout
                         {
-                            i++;
-                            if (i >= 256) throw new Exception("没有读到一行");
+                            byte[] bytSend = Encoding.ASCII.GetBytes("AT+KPKEEP=?\n");
+                            await stream.WriteAsync(bytSend, 0, bytSend.Length);
+                            byte[] bufRecv = new byte[9];
+                            int recvCnt = await stream.ReadAsync(bufRecv, 0, bufRecv.Length, 1000);
+                            if (recvCnt != bufRecv.Length)
+                            {
+                                throw new Exception("长连接不正常");
+                            }
+                            var msg = Encoding.ASCII.GetString(bufRecv, 0, bufRecv.Length);
+                            _logger.LogDebug("收到心跳包{0}", msg);
                             continue;
                         }
 
-                        string message = Encoding.ASCII.GetString(buf, 0, i);
+                        if (n != 1) throw new Exception("网络读取失败");
+
+                        _logger.LogTrace("读到一个字节");
+                        char c = (char)lineBuf[i];
+                        if (c != '\n')
+                        {
+                            i++;
+                            if (i >= lineBuf.Length) throw new Exception("没有读到一行");
+                            continue;
+                        }
+
+                        string message = Encoding.ASCII.GetString(lineBuf, 0, i);
 
                         Process(message);
 
@@ -80,6 +123,7 @@ namespace ScaleService
                 catch (Exception e)
                 {
                     _logger.LogDebug("网络抛出异常:{0}", e);
+                    await Task.Delay(200);
                     //need to reconnect
                     //tcpClient.Close();
                     //continue;

@@ -1,9 +1,6 @@
 ﻿using System;
-using System.IO;
-using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace ScaleService
@@ -151,6 +148,7 @@ namespace ScaleService
             for (int i = 0; i < 3; i++)
             {
                 if (await SwitchRelayOnceAsync(isSucceed)) return true;
+                await Task.Delay(100);
             }
             //Progress?.Invoke(this, new ProgressEventArgs("开关继电器失败"));
             Logger.Warn("开关继电器失败");
@@ -184,23 +182,23 @@ namespace ScaleService
                 byte[] bytSend = Encoding.ASCII.GetBytes(command);
                 await stream.WriteAsync(bytSend, 0, bytSend.Length);
 
-                byte[] buf = new byte[256];
+                byte[] lineBuf = new byte[256];
                 int i = 0;
                 string message;
                 while (stream.CanRead)
                 {
-                    int n = await stream.ReadAsync(buf, i, 1);
+                    int n = await stream.ReadAsync(lineBuf, i, 1, 1000);
                     if (n != 1) throw new Exception("网络读取失败");
 
-                    char c = (char)buf[i];
+                    char c = (char)lineBuf[i];
                     if (c != '\n')
                     {
                         i++;
-                        if (i >= 256) throw new Exception("没有读到一行");
+                        if (i >= lineBuf.Length) throw new Exception("没有读到一行");
                         continue;
                     }
 
-                    message = Encoding.ASCII.GetString(buf, 0, i);
+                    message = Encoding.ASCII.GetString(lineBuf, 0, i);
                     Logger.Trace("Relay:Got the response " + message);
                     if (message == "OK")
                     {
