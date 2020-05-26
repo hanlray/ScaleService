@@ -5,9 +5,11 @@ VisualStudioVersion = 16.0.30011.22
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScaleService", "ScaleService\ScaleService.csproj", "{60A832C8-552E-4210-8248-850C3B414C79}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TcpClientTest", "TcpClientTest\TcpClientTest.csproj", "{A8A7DCE2-DB9E-4569-A57D-F552716862E3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TcpClientTest", "TcpClientTest\TcpClientTest.csproj", "{A8A7DCE2-DB9E-4569-A57D-F552716862E3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TcpServerTest", "TcpServerTest\TcpServerTest.csproj", "{9FB4AA9D-7BFE-4A52-9546-6072AB1D9FB7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TcpServerTest", "TcpServerTest\TcpServerTest.csproj", "{9FB4AA9D-7BFE-4A52-9546-6072AB1D9FB7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{D892E87D-FDFF-4138-BE02-8671D445642B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -55,6 +57,18 @@ Global
 		{9FB4AA9D-7BFE-4A52-9546-6072AB1D9FB7}.Release|x64.Build.0 = Release|Any CPU
 		{9FB4AA9D-7BFE-4A52-9546-6072AB1D9FB7}.Release|x86.ActiveCfg = Release|Any CPU
 		{9FB4AA9D-7BFE-4A52-9546-6072AB1D9FB7}.Release|x86.Build.0 = Release|Any CPU
+		{D892E87D-FDFF-4138-BE02-8671D445642B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D892E87D-FDFF-4138-BE02-8671D445642B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D892E87D-FDFF-4138-BE02-8671D445642B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D892E87D-FDFF-4138-BE02-8671D445642B}.Debug|x64.Build.0 = Debug|Any CPU
+		{D892E87D-FDFF-4138-BE02-8671D445642B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D892E87D-FDFF-4138-BE02-8671D445642B}.Debug|x86.Build.0 = Debug|Any CPU
+		{D892E87D-FDFF-4138-BE02-8671D445642B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D892E87D-FDFF-4138-BE02-8671D445642B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D892E87D-FDFF-4138-BE02-8671D445642B}.Release|x64.ActiveCfg = Release|Any CPU
+		{D892E87D-FDFF-4138-BE02-8671D445642B}.Release|x64.Build.0 = Release|Any CPU
+		{D892E87D-FDFF-4138-BE02-8671D445642B}.Release|x86.ActiveCfg = Release|Any CPU
+		{D892E87D-FDFF-4138-BE02-8671D445642B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

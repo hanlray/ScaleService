@@ -114,3 +114,6 @@ ShowSpeed:
       }
     }
   ]
+
+
+json-server -m service-middleware.js -w test-service.json

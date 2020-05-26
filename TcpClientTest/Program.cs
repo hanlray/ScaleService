@@ -2,6 +2,7 @@
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Common;
 
 namespace TcpClientTest
 {
@@ -12,7 +13,12 @@ namespace TcpClientTest
             var tcpClient = new TcpClient();
             await tcpClient.ConnectAsync("localhost", 13000);
             Console.WriteLine("Connected");
-            byte[] buf = new byte[500_000_000];
+
+            byte[] buf = new byte[16];
+            using var stream = tcpClient.GetStream();
+            var i = await stream.ReadAsync(buf, 0, buf.Length, 2000);
+
+            byte[] buf1 = new byte[500_000_000];
             using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(10000));
             try
             {
@@ -21,7 +27,7 @@ namespace TcpClientTest
             }
             catch (Exception e)
             {
-                Console.WriteLine("Exception happened");
+                Console.WriteLine("Exception happened"+e.Message);
             }
         }
     }

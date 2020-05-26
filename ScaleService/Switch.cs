@@ -3,27 +3,23 @@ using System.Text;
 
 namespace ScaleService
 {
-    internal class Switch
+    public class Switch
     {
         public event EventHandler On;
         public event EventHandler Off;
 
-        private int _inPort;
         private RelayWatcher _relayWatcher;
 
         public bool IsOn { get; internal set; }
 
         private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
-        public Switch(int inPort, RelayWatcher relayWatcher)
+        public Switch(RelayWatcher relayWatcher)
         {
-            _inPort = inPort;
             _relayWatcher = relayWatcher;
-
-            _relayWatcher.Subscribe(inPort, OnChanged);
         }
 
-        private void OnChanged(object sender, InChangedEventArgs e)
+        protected void OnChanged(object sender, InChangedEventArgs e)
         {
             if (e.Value == 1)
             {
@@ -37,6 +33,11 @@ namespace ScaleService
                 //Logger.Debug("In {0} is off", _inPort);
                 Off?.Invoke(this, new EventArgs());
             }
+        }
+
+        internal void SetInPort(int inPort)
+        {
+            _relayWatcher.Subscribe(inPort, OnChanged);
         }
     }
 }

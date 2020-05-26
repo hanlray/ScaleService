@@ -1,11 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using NLog.Extensions.Logging;
 
 namespace ScaleService
 {
@@ -21,8 +15,11 @@ namespace ScaleService
                 .UseWindowsService()
                 .ConfigureServices((hostContext, services) =>
                 {
+                    //services.AddTransient<Switch, AutoSwitch>();
+                    services.AddTransient<Switch>();
                     services.AddTransient<ScaleOperator>();
-                    services.AddTransient<ScaleOperator.Builder>();
+                    services.AddTransient<ScaleOperator.UniBuilder>();
+                    services.AddTransient<ScaleOperator.BiBuilder>();
                     services.AddTransient<BidirectCoordinator>();
                     services.AddTransient<BidirectCoordinator.Builder>();
                     services.AddSingleton<RelayWatcher>();

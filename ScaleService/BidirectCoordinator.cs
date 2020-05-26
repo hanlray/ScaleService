@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ScaleService
 {
@@ -14,19 +15,22 @@ namespace ScaleService
             private readonly Dictionary<int, Switch> _gratingSwitches = new Dictionary<int, Switch>();
             private BidirectCoordinator _co;
             private RelayWatcher _relayWatcher;
-            private ScaleOperator.Builder _entranceBuilder;
-            private ScaleOperator.Builder _exitBuilder;
+            private ScaleOperator.BiBuilder _entranceBuilder;
+            private ScaleOperator.BiBuilder _exitBuilder;
+            private IServiceProvider serviceProvider;
 
             public Builder(
                 BidirectCoordinator co,
                 RelayWatcher relayWatcher,
-                ScaleOperator.Builder entranceBuilder,
-                ScaleOperator.Builder exitBuilder)
+                ScaleOperator.BiBuilder entranceBuilder,
+                ScaleOperator.BiBuilder exitBuilder,
+                IServiceProvider serviceProvider)
             {
                 this._co = co;
                 _relayWatcher = relayWatcher;
                 this._entranceBuilder = entranceBuilder;
                 this._exitBuilder = exitBuilder;
+                this.serviceProvider = serviceProvider;
             }
 
             public BidirectCoordinator Build(IConfigurationSection biOptions)
@@ -34,14 +38,16 @@ namespace ScaleService
                 var gratings = biOptions.GetSection("Gratings").Get<int[]>();
                 foreach (var grating in gratings)
                 {
-                    _gratingSwitches.Add(grating, new Switch(grating, _relayWatcher));
+                    var gSwitch = serviceProvider.GetRequiredService<Switch>();
+                    gSwitch.SetInPort(grating);
+                    _gratingSwitches.Add(grating, gSwitch);
                 }
 
                 _entranceBuilder.Options = biOptions.GetSection("Entrance");
-                _co.EntranceOP = _entranceBuilder.BuildBi(_gratingSwitches);
+                _co.EntranceOP = _entranceBuilder.Build(_gratingSwitches);
 
                 _exitBuilder.Options = biOptions.GetSection("Exit");
-                _co.ExitOP = _exitBuilder.BuildBi(_gratingSwitches);
+                _co.ExitOP = _exitBuilder.Build(_gratingSwitches);
 
                 _co.EntranceOP.Busy += (s, e) =>
                 {
